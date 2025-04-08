@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Horario Compacto</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <style>
+    body { 
+      font-family: 'Segoe UI', Arial, sans-serif;
+      padding: 30px;
+      font-size: 14px;
+      background-color: #f5f5f5;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h3 {
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 24px;
+    }
+
+    table { 
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+      background: white;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border: 1px solid #e0e0e0;
+      padding: 8px;
+      text-align: center;
+      height: 40px;
+      font-size: 13px;
+      vertical-align: middle;
+      position: relative;
+    }
+
+    th { 
+      background-color: #34495e;
+      color: white;
+      font-weight: 600;
+    }
+
+    .ocupado {
+      color: white;
+      font-weight: bold;
+      font-size: 13px;
+      border-radius: 4px;
+      margin: 2px;
+      height: calc(100% - 4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-eliminar {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: rgba(255,255,255,0.3);
+      color: white;
+      border: none;
+      padding: 2px 6px;
+      font-size: 10px;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.2s;
+    }
+
+    .btn-eliminar:hover {
+      background: rgba(255,0,0,0.7);
+    }
+
+    .controles {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input, select {
+      font-size: 13px;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin: 2px;
+      transition: all 0.3s;
+    }
+
+    input:focus, select:focus {
+      border-color: #3498db;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(52,152,219,0.2);
+    }
+
+    button {
+      font-size: 13px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-agregar {
+      background-color: #2ecc71;
+      color: white;
+    }
+
+    .btn-agregar:hover {
+      background-color: #27ae60;
+    }
+
+    .btn-limpiar {
+      background-color: #e74c3c;
+      color: white;
+    }
+
+    .btn-limpiar:hover {
+      background-color: #c0392b;
+    }
+
+    .btn-exportar {
+      background-color: #3498db;
+      color: white;
+      padding: 8px 16px;
+      margin: 5px;
+      transition: all 0.3s;
+    }
+
+    .btn-exportar:hover {
+      background-color: #2980b9;
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body>
+  <h3>Horario Compacto</h3>
+  
+  <div class="controles">
+    <input type="text" id="curso" placeholder="Nombre del curso" />
+    <select id="dia">
+      <option>Lunes</option>
+      <option>Martes</option>
+      <option>Miércoles</option>
+      <option>Jueves</option>
+      <option>Viernes</option>
+      <option>Sábado</option>
+    </select>
+    <select id="hora">
+      <option>08:00</option>
+      <option>09:00</option>
+      <option>10:00</option>
+      <option>11:00</option>
+      <option>12:00</option>
+      <option>13:00</option>
+      <option>14:00</option>
+      <option>15:00</option>
+      <option>16:00</option>
+      <option>17:00</option>
+      <option>18:00</option>
+      <option>19:00</option>
+      <option>20:00</option>
+      <option>21:00</option>
+    </select>
+    <select id="duracion">
+      <option value="1">1 hora</option>
+      <option value="2">2 horas</option>
+      <option value="3">3 horas</option>
+      <option value="4">4 horas</option>
+      <option value="5">5 horas</option>
+      <option value="6">6 horas</option>
+    </select>
+    <input type="color" id="color" value="#2ecc71">
+    <button class="btn-agregar" onclick="agregarClase()">Agregar</button>
+    <button class="btn-limpiar" onclick="limpiarHorario()">Limpiar</button>
+    <button class="btn-exportar" onclick="exportarExcel()">Exportar a Excel</button>
+    <button class="btn-exportar" onclick="exportarPNG()">Exportar a PNG</button>
+  </div>
+
+  <table id="tablaHorario">
+    <thead>
+      <tr>
+        <th>Hora</th>
+        <th>Lunes</th>
+        <th>Martes</th>
+        <th>Miércoles</th>
+        <th>Jueves</th>
+        <th>Viernes</th>
+        <th>Sábado</th>
+      </tr>
+    </thead>
+    <tbody id="cuerpoTabla"></tbody>
+  </table>
+
+  <script>
+    const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    const horas = [];
+
+    for (let h = 8; h < 22; h++) {
+      const inicio = h.toString().padStart(2, '0') + ":00";
+      const fin = (h + 1).toString().padStart(2, '0') + ":00";
+      horas.push(`${inicio} - ${fin}`);
+    }
+
+    const ocupados = {};
+    const cuerpoTabla = document.getElementById('cuerpoTabla');
+
+    horas.forEach(rango => {
+      const fila = document.createElement('tr');
+      fila.innerHTML = `<td>${rango}</td>` + dias.map(dia => `<td id="${dia}-${rango}"></td>`).join('');
+      cuerpoTabla.appendChild(fila);
+    });
+
+    function agregarClase() {
+      const curso = document.getElementById('curso').value.trim();
+      const dia = document.getElementById('dia').value;
+      const horaInicio = document.getElementById('hora').value;
+      const duracion = parseInt(document.getElementById('duracion').value);
+      const color = document.getElementById('color').value;
+
+      if (!curso) return alert("Ingresa el nombre del curso");
+
+      const idx = horas.findIndex(h => h.startsWith(horaInicio));
+      if (idx === -1 || idx + duracion > horas.length) {
+        alert("Duración inválida para la hora seleccionada");
+        return;
+      }
+
+      const claves = [];
+      for (let i = 0; i < duracion; i++) {
+        const clave = `${dia}-${horas[idx + i]}`;
+        if (ocupados[clave]) {
+          alert(`Conflicto: ya hay una clase en ${clave}`);
+          return;
+        }
+        claves.push(clave);
+      }
+
+      claves.forEach((clave, i) => {
+        const celda = document.getElementById(clave);
+        celda.classList.add('ocupado');
+        celda.style.backgroundColor = color;
+        celda.textContent = curso;
+        ocupados[clave] = { curso, claves, color };
+
+        if (i === 0) {
+          const btn = document.createElement('button');
+          btn.textContent = "X";
+          btn.className = 'btn-eliminar';
+          btn.onclick = () => eliminarCurso(claves);
+          celda.appendChild(btn);
+        }
+      });
+    }
+
+    function eliminarCurso(claves) {
+      claves.forEach(clave => {
+        const celda = document.getElementById(clave);
+        celda.textContent = '';
+        celda.style.backgroundColor = '';
+        celda.classList.remove('ocupado');
+        delete ocupados[clave];
+      });
+    }
+
+    function limpiarHorario() {
+      for (let clave in ocupados) {
+        const celda = document.getElementById(clave);
+        celda.textContent = '';
+        celda.style.backgroundColor = '';
+        celda.classList.remove('ocupado');
+      }
+      for (let clave in ocupados) delete ocupados[clave];
+    }
+
+    function exportarExcel() {
+      const wb = XLSX.utils.book_new();
+      const datos = [];
+      
+      // Agregar encabezados
+      datos.push(['Hora', ...dias]);
+      
+      // Agregar datos
+      horas.forEach(hora => {
+        const fila = [hora];
+        dias.forEach(dia => {
+          const celda = document.getElementById(`${dia}-${hora}`);
+          fila.push(celda.textContent.replace('X', '').trim());
+        });
+        datos.push(fila);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(datos);
+      XLSX.utils.book_append_sheet(wb, ws, "Horario");
+      XLSX.writeFile(wb, "horario.xlsx");
+    }
+
+    function exportarPNG() {
+      html2canvas(document.getElementById('tablaHorario')).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'horario.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    }
+  </script>
+
+</body>
+</html>
